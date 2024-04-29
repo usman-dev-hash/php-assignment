@@ -5,19 +5,6 @@ use FastRoute\Dispatcher;
 
 require_once 'vendor/autoload.php'; // Include autoloader
 
-//$redisClient = new Predis\Client([
-//    'host' => '172.25.0.4', // Service name if using network, or 'localhost' if not
-//    'port' => '6379', // Assuming you mapped the container port to this host port
-//]);
-//
-//try {
-//    $redisClient->ping();
-//    echo "Connection Successful!";
-//} catch (Predis\Connection\ConnectionException $e) {
-//    echo "Connection Error: " . $e->getMessage();
-//}
-//exit("redis");
-
 $routeVars = function ($routeInfo) { return $routeInfo = [2];};
 
 // Create DI container
@@ -25,7 +12,7 @@ $app = new Container();
 
 // Include database configuration
 require_once __DIR__ . '/bootstrap/db.php';
-require_once __DIR__ . '/bootstrap/redis_client.php';
+require_once __DIR__ . '/bootstrap/RedisConnection.php';
 
 // Include models and repositories
 require_once __DIR__ . '/bootstrap/repositories.php';
@@ -58,9 +45,7 @@ switch ($routeInfo[0]) {
         break;
     case Dispatcher::FOUND:
         list($controllerName, $method) = $routeInfo[1];
-        //$vars = call_user_func_array($routeVars, array_values($routeInfo[2]));
-        //$routeInfo = $dispatcher->dispatch($httpMethod, $uri);
-        // Extract the desired element
+        # Extract the desired element
         $vars = $routeInfo[2];
 
         // Convert namespace separators to directory separators

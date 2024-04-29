@@ -27,5 +27,9 @@ $app->set('database', function (Container $container) {
     return $mysqli;
 });
 
+/*$app->set('redis', function (Container $c) {
+    return new RedisConnection();
+});*/
+
 // Return the DI container
 return $app;

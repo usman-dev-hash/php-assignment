@@ -2,8 +2,8 @@
 
 namespace Model;
 
+use bootstrap\RedisClient;
 use repository\PostRepository;
-use Predis;
 
 class PostModel
 {
@@ -17,34 +17,35 @@ class PostModel
     public function getPost($id)
     {
         # redis client
-        $redisClient = new Predis\Client([
-            'host' => '172.25.0.4',
-            'port' => '6379',
-        ]);
+        $redisClient = RedisClient::getClient();
 
         # Get value from redis
         $dataFromRedis = $redisClient->get('posts_' . $id);
 
         if (empty($dataFromRedis)) {
-            $post = [];
+            $post = null;
             $result = $this->postRepository->getPost($id);
 
             if ($result) {
-                while ($row = $result->fetch_assoc()) {
-                    $post[] = $row;
-                }
+                $post = $result->fetch_assoc();
             }
 
             # Set value in redis
             $redisClient->set('posts_' . $id, json_encode($post), "EX", 60);
+
+            # Set cache miss indicator in response headers
+            header('X-Cache-Status: miss');
 
             return [
                 'data' => $post
             ];
         }
 
+        # Data found in Redis, set cache hit indicator in response headers
+        header('X-Cache-Status: hit');
+
         return [
-            'data' => $dataFromRedis
+            'data' => json_decode($dataFromRedis)
         ];
 
     }
@@ -82,11 +83,8 @@ class PostModel
         $result = $this->postRepository->createPost($requestBody);
 
         if ($result) {
-            # store in redis
-            $redisClient = new Predis\Client([
-                'host' => '172.25.0.4',
-                'port' => '6379',
-            ]);
+            # redis client
+            $redisClient = RedisClient::getClient();
 
             # Set value in redis
             $redisClient->set('posts_' . $result, json_encode($requestBody), 'EX', 60);

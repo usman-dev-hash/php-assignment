@@ -2,8 +2,8 @@
 
 namespace Model;
 
+use bootstrap\RedisClient;
 use repository\MoviesRepository;
-use Predis;
 
 class MoviesModel
 {
@@ -17,10 +17,7 @@ class MoviesModel
     public function getAMovies($id)
     {
         # redis client
-        $redisClient = new Predis\Client([
-            'host' => '172.25.0.4',
-            'port' => '6379',
-        ]);
+        $redisClient = RedisClient::getClient();
 
         # get value from redis
         $moviesDataFromRedis = $redisClient->get('movies_' . $id);
@@ -50,10 +47,16 @@ class MoviesModel
             # get value from redis
             $redisClient->set('movies_' . $id, json_encode($moviesData), 'EX', 60);
 
+            # Set cache miss indicator in response headers
+            header('X-Cache-Status: miss');
+
             return [
                 'data' => $moviesData
             ];
         }
+
+        # Data found in Redis, set cache hit indicator in response headers
+        header('X-Cache-Status: hit');
 
         return [
           'data' => json_decode($moviesDataFromRedis)
@@ -63,10 +66,7 @@ class MoviesModel
     public function getMovies()
     {
         # redis client
-        $redisClient = new Predis\Client([
-            'host' => '172.25.0.4',
-            'port' => '6379',
-        ]);
+        $redisClient = RedisClient::getClient();
 
         # get redis value
         $moviesDataFromRedis = $redisClient->get('all_movies');
@@ -94,13 +94,19 @@ class MoviesModel
 
             $redisClient->set('all_movies', json_encode($movies), 'EX', 60);
 
+            # Set cache miss indicator in response headers
+            header('X-Cache-Status: miss');
+
             return [
                 'data' => $movies
             ];
         }
 
+        # Data found in Redis, set cache hit indicator in response headers
+        header('X-Cache-Status: hit');
+
         return [
-            'data' => $moviesDataFromRedis
+            'data' => json_decode($moviesDataFromRedis)
         ];
     }
 
@@ -146,11 +152,8 @@ class MoviesModel
         $result = $this->moviesRepository->createMovies($requestBody);
 
         if ($result) {
-            # store in redis
-            $redisClient = new Predis\Client([
-                'host' => '172.25.0.4',
-                'port' => '6379',
-            ]);
+            # redis client
+            $redisClient = RedisClient::getClient();
 
             # Set value in redis
             $redisClient->set('movies_' . $result, json_encode($requestBody), 'EX', 60);
