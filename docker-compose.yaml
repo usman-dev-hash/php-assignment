@@ -1,0 +1,43 @@
+version: '3'
+services:
+  db:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: php_assignment
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./install:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
+
+  php:
+    build:
+      context: .
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "8082:6379" # Expose Redis port
+    volumes:
+      - redis_data:/data  # Persistent storage for Redis data
+    # Add any additional configuration needed
+
+volumes:
+  mysql_data:
+  redis_data:  # New volume for Redis data
